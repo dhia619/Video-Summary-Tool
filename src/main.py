@@ -12,4 +12,4 @@ class Application:
         self.gui.mainloop()
 
 if __name__ == "__main__":
-    app = Application("../computer vision/assets/cars - Trim.mp4","../computer vision/models/yolov8n.pt")
+    app = Application("../computer vision/assets/cars.mp4","../computer vision/models/yolov8n.pt")
