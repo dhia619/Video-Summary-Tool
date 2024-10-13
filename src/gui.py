@@ -47,6 +47,7 @@ class APPGUI(ctk.CTk):
         self.categories_listbox_scrollbar = ttk.Scrollbar(self.categories_frame)
         self.categories_listbox_scrollbar.pack(side=ctk.RIGHT, fill=ctk.Y)
 
+
         # Configure scrollbar with the Listbox
         self.categories_listbox.config(yscrollcommand=self.categories_listbox_scrollbar.set)
         self.categories_listbox_scrollbar.configure(command=self.categories_listbox.yview)
@@ -63,11 +64,13 @@ class APPGUI(ctk.CTk):
         self.processing_label.pack(pady = 20)
         self.start_button = ctk.CTkButton(self.right_frame, text = "Start", font = ("courier",20))
         self.start_button.pack(pady = 10)
-        self.progress_bar = ttk.Progressbar(self.right_frame, orient="horizontal", mode="determinate", length=350, )
+        self.progress_bar = ttk.Progressbar(self.right_frame, orient="horizontal", mode="determinate", length=350)
         self.progress_bar.pack(padx = 60, pady = 30, fill = ctk.X)
+        self.progress_label = ctk.CTkLabel(self.right_frame, text = "0 %", font = ("courier",20))
+        self.progress_label.pack()
 
         self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20))
-        self.result_entry.pack(padx = 60, fill = ctk.X)
+        self.result_entry.pack(padx = 60, pady = 10, fill = ctk.X)
 
 
     def put_text(self,widget,text):
