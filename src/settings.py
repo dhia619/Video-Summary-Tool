@@ -1,4 +1,5 @@
-models = ["YOLOv8 Nano","YOLOv8 Large"]
+models = ["YOLO11 Nano", "YOLO11 Small", "YOLO11 Medium","YOLO11 Large", "YOLO11 ExtraLarge"]
+actual_models_names = ["yolo11n.pt", "yolo11s.pt", "yolo11m.pt", "yolo11l.pt", "yolo11x.pt"]
 
 classes = [
     'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',

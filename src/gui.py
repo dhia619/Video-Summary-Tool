@@ -1,7 +1,7 @@
 import customtkinter as ctk
-from tkinter import Listbox
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
 from settings import *
 
 class APPGUI(ctk.CTk):
@@ -15,12 +15,13 @@ class APPGUI(ctk.CTk):
         self.minsize(800,400)
         self.configure(fg_color="white")
 
-
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=6)
 
-        # left frame for settings 
+        self.video_file = ""
+
+        # Left frame for settings 
         self.left_frame = ctk.CTkFrame(self, fg_color="white")
         self.left_frame.grid(row=0, column=0, sticky="nsw")
 
@@ -31,30 +32,24 @@ class APPGUI(ctk.CTk):
         self.models_label.pack(padx=15, anchor="w")
 
         self.models_dropdown = ctk.CTkComboBox(self.left_frame, values=models, font=("courier",18))
-        self.models_dropdown.pack(padx=15, pady=5, anchor="w", fill = ctk.X)
+        self.models_dropdown.pack(padx=15, pady=5, anchor="w", fill=ctk.X)
 
         self.categories_label = ctk.CTkLabel(self.left_frame, text="Categories", font=("courier", 18, "bold"))
         self.categories_label.pack(padx=15, pady=5, anchor="w")
 
-        # Frame to hold Listbox and Scrollbar together
-        self.categories_frame = ctk.CTkFrame(self.left_frame, fg_color="white")
-        self.categories_frame.pack(padx=15, pady=5, anchor="w", fill=ctk.BOTH, expand=True)
+        # Frame to hold the scrollable checkboxes
+        self.scrollable_frame = ctk.CTkScrollableFrame(self.left_frame, fg_color="white", height=200)  # Set a height for scrolling
+        self.scrollable_frame.pack(padx=15, pady=5, anchor="w", fill=ctk.BOTH, expand=True)
 
-        # Listbox and Scrollbar
-        self.categories_listbox = Listbox(self.categories_frame, selectmode="multiple", font=("courier", 20), relief="flat")
-        self.categories_listbox.pack(side=ctk.LEFT, fill=ctk.BOTH, expand=True)
+        # Create a variable to store the states of the checkboxes
+        self.checkbox_vars = {}
 
-        self.categories_listbox_scrollbar = ttk.Scrollbar(self.categories_frame)
-        self.categories_listbox_scrollbar.pack(side=ctk.RIGHT, fill=ctk.Y)
-
-
-        # Configure scrollbar with the Listbox
-        self.categories_listbox.config(yscrollcommand=self.categories_listbox_scrollbar.set)
-        self.categories_listbox_scrollbar.configure(command=self.categories_listbox.yview)
-
-        # Insert class names into the Listbox
+        # Add checkboxes for each class in the `classes` list
         for cls in classes:
-            self.categories_listbox.insert(ctk.END, cls)
+            var = ctk.BooleanVar()  # Each checkbox needs its own variable
+            checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=cls, variable=var, font=("courier", 20))
+            checkbox.pack(anchor="w", padx=5, pady=5)
+            self.checkbox_vars[cls] = var  # Store the variable associated with each class
 
         # Right frame for processing
         self.right_frame = ctk.CTkFrame(self, fg_color="white")
@@ -62,24 +57,52 @@ class APPGUI(ctk.CTk):
 
         self.processing_label = ctk.CTkLabel(self.right_frame, text = "Analyser", font=("courier", 22, "bold"), fg_color="white", text_color="orange")
         self.processing_label.pack(pady = 20)
+        
+        self.upload_button = ctk.CTkButton(self.right_frame, text="Upload Video", command=self.upload_video, font=("Courier", 20))
+        self.upload_button.pack(pady=20)
+        
+        self.selected_file_label = ctk.CTkLabel(self.right_frame, text="No file selected", font=("Courier", 16))
+        self.selected_file_label.pack(pady=10)
+
         self.start_button = ctk.CTkButton(self.right_frame, text = "Start", font = ("courier",20))
         self.start_button.pack(pady = 10)
+
+        self.preview_label = ctk.CTkLabel(self.right_frame, text="")
+        self.preview_label.pack(pady = 10)
+        
         self.progress_bar = ttk.Progressbar(self.right_frame, orient="horizontal", mode="determinate", length=350)
         self.progress_bar.pack(padx = 60, pady = 30, fill = ctk.X)
+        
         self.progress_label = ctk.CTkLabel(self.right_frame, text = "0 %", font = ("courier",20))
         self.progress_label.pack()
 
         self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20))
         self.result_entry.pack(padx = 60, pady = 10, fill = ctk.X)
 
+    def put_text(self, widget, text):
+        widget.insert(ctk.END, text)
 
-    def put_text(self,widget,text):
-        widget.insert(ctk.END,text)
-
-    def show_alert_message(self,alert_type,title,msg):
+    def show_alert_message(self, alert_type, title, msg):
         if alert_type == "error":
-            messagebox.showerror(title,msg)
+            messagebox.showerror(title, msg)
         elif alert_type == "warning":
-            messagebox.showwarning(title,msg)
+            messagebox.showwarning(title, msg)
         elif alert_type == "info":
-            messagebox.showinfo(title,msg)
+            messagebox.showinfo(title, msg)
+
+    # Function to get the selected categories (checked checkboxes)
+    def get_selected_categories(self):
+        selected_classes = [cls for cls, var in self.checkbox_vars.items() if var.get()]
+        return selected_classes
+    
+    def upload_video(self):
+        # Open file dialog to select video file
+        self.video_file = filedialog.askopenfilename(
+            title="Select a video file",
+            filetypes=(("Video Files", "*.mp4 *.avi *.mov"), ("All Files", "*.*"))
+        )
+        if self.video_file:
+            # Update label with selected file path
+            self.selected_file_label.configure(text=f"Selected: {self.video_file.split('/')[-1]}")
+        else:
+            self.selected_file_label.configure(text="No file selected")
