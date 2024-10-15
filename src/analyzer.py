@@ -1,15 +1,15 @@
-import cv2
+from cv2 import VideoCapture, rectangle, CAP_PROP_FRAME_COUNT, CAP_PROP_FPS, CAP_PROP_POS_FRAMES, cvtColor, COLOR_BGR2RGB
 from ultralytics import YOLO
 from sort import Sort
 import numpy as np
-from time import *
+from time import time
 from math import floor
 from threading import Thread, Event
 from PIL import Image
 from settings import models,actual_models_names
-import os
+from os import path, makedirs
 from collections import defaultdict
-import cvzone
+from cvzone import putTextRect
 
 class Entity:
     def __init__(self, cls, id_, t, conf):
@@ -39,6 +39,7 @@ class Analyzer:
         self.critical_scenes = []
         registred_old_length = len(self.registered_entities)
 
+        # Filter detected objects
         for bbox in boxes:
             class_ = self.all_classes[int(bbox.cls[0])]
             confidence = round(bbox.conf[0].item(), 2)
@@ -49,25 +50,27 @@ class Analyzer:
                 confidences.append(confidence)
                 timestamps.append(current_frame_index / self.frame_rate)
 
+        # Track filtered objects
         tracking_results = self.tracker.update(dets=detections)
         for tracking_result, cls_, t, conf in zip(tracking_results, temp_classes, timestamps, confidences):
             x1, y1, x2, y2, id_ = map(int, tracking_result)
             if id_ not in self.registered_entities:
                 self.registered_entities.append(id_)
                 self.entities.append(Entity(cls_, id_, t, conf))
-                cv2.rectangle(current_frame, (x1,y1),(x2,y2),(255,0,0))
+                rectangle(current_frame, (x1,y1),(x2,y2),(255,0,0))
 
+        # If new objects showed , we save a screenshot
         if registred_old_length < len(self.registered_entities):
-            cvzone.putTextRect(current_frame, self.convert_time(t), (10,40))
+            putTextRect(current_frame, self.convert_time(t), (10,40))
             self.save_critical_scene(current_frame, self.convert_time(t).replace(":","-"))
         
     def save_critical_scene(self, frame, t):
         # Ensure the directory for saving frames exists
-        if not os.path.exists("critical_scenes"):
-            os.makedirs("critical_scenes")
+        if not path.exists("critical_scenes"):
+            makedirs("critical_scenes")
 
         # Convert the frame to RGB
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_rgb = cvtColor(frame, COLOR_BGR2RGB)
 
         file_name = f"critical_scenes/{t}.jpg"
         
@@ -85,7 +88,7 @@ class Analyzer:
 
             self.batch_frames.append(frame)
 
-            current_frame = int(self.video.get(cv2.CAP_PROP_POS_FRAMES))
+            current_frame = int(self.video.get(CAP_PROP_POS_FRAMES))
 
 
             # Update progress bar
@@ -130,9 +133,9 @@ class Analyzer:
             gui.show_alert_message("error", "Missing Video", "Please upload a video")
             return False 
 
-        self.video = cv2.VideoCapture(video_path)
-        self.total_frames = self.video.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.frame_rate = self.video.get(cv2.CAP_PROP_FPS)
+        self.video = VideoCapture(video_path)
+        self.total_frames = self.video.get(CAP_PROP_FRAME_COUNT)
+        self.frame_rate = self.video.get(CAP_PROP_FPS)
 
         if len(self.selected_classes) <= 0:
             gui.show_alert_message("error", "Class is missing", "You should choose one or multiple classes")
@@ -191,22 +194,3 @@ class Analyzer:
         minutes = int((t % 3600) // 60)
         seconds = int(t % 60)
         return f"{hours:02}:{minutes:02}:{seconds:02}"
-    
-    """
-    def show_video_preview(self, gui, frame):
-        # Ensure the frame is in the correct format (uint8)
-        if frame.dtype != 'uint8':
-            frame = cv2.convertScaleAbs(frame)  # Converts the frame to uint8
-
-        # Convert the frame to RGB (from BGR, which OpenCV uses)
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        # Convert the frame to an ImageTk object for displaying in Tkinter
-        image = Image.fromarray(frame_rgb)
-        image_ctk = CTkImage(image, size=(700, 350))  # Pass the size to CTkImage
-
-        # Display the frame in the label
-        gui.preview_label.configure(image=image_ctk)
-        gui.preview_label.image = image_ctk
-
-    """

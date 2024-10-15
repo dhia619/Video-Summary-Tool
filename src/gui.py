@@ -1,7 +1,5 @@
 import customtkinter as ctk
-from tkinter import ttk
-from tkinter import messagebox
-from tkinter import filedialog
+from tkinter import ttk, messagebox, filedialog
 from settings import *
 
 class APPGUI(ctk.CTk):
@@ -38,16 +36,21 @@ class APPGUI(ctk.CTk):
         self.categories_label.pack(padx=15, pady=5, anchor="w")
 
         # Frame to hold the scrollable checkboxes
-        self.scrollable_frame = ctk.CTkScrollableFrame(self.left_frame, fg_color="white", height=200)  # Set a height for scrolling
+        self.scrollable_frame = ctk.CTkScrollableFrame(self.left_frame, fg_color="white", height=200)
         self.scrollable_frame.pack(padx=15, pady=5, anchor="w", fill=ctk.BOTH, expand=True)
 
         # Create a variable to store the states of the checkboxes
         self.checkbox_vars = {}
 
+        # Add "All" checkbox
+        self.all_var = ctk.BooleanVar()  # Variable for the "All" checkbox
+        self.all_checkbox = ctk.CTkCheckBox(self.scrollable_frame, text="All", variable=self.all_var, command=self.toggle_all_checkboxes, font=("courier", 20))
+        self.all_checkbox.pack(anchor="w", padx=5, pady=5)
+
         # Add checkboxes for each class in the `classes` list
         for cls in classes:
             var = ctk.BooleanVar()  # Each checkbox needs its own variable
-            checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=cls, variable=var, font=("courier", 20))
+            checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=cls, variable=var, command=self.update_all_checkbox, font=("courier", 20))
             checkbox.pack(anchor="w", padx=5, pady=5)
             self.checkbox_vars[cls] = var  # Store the variable associated with each class
 
@@ -67,10 +70,8 @@ class APPGUI(ctk.CTk):
         self.start_button = ctk.CTkButton(self.right_frame, text = "Start", font = ("courier",20))
         self.start_button.pack(pady = 10)
 
-        """
         self.preview_label = ctk.CTkLabel(self.right_frame, text="")
         self.preview_label.pack(pady = 10)
-        """
         
         self.progress_bar = ttk.Progressbar(self.right_frame, orient="horizontal", mode="determinate", length=350)
         self.progress_bar.pack(padx = 60, pady = 30, fill = ctk.X)
@@ -108,3 +109,14 @@ class APPGUI(ctk.CTk):
             self.selected_file_label.configure(text=f"Selected: {self.video_file.split('/')[-1]}")
         else:
             self.selected_file_label.configure(text="No file selected")
+
+    def toggle_all_checkboxes(self):
+        # Check or uncheck all checkboxes based on the "All" checkbox state
+        state = self.all_var.get()
+        for var in self.checkbox_vars.values():
+            var.set(state)
+
+    def update_all_checkbox(self):
+        # If any checkbox is unchecked, also uncheck the "All" checkbox
+        all_checked = all(var.get() for var in self.checkbox_vars.values())
+        self.all_var.set(all_checked)
