@@ -10,7 +10,8 @@ from settings import models,actual_models_names
 from os import path, makedirs
 from collections import defaultdict
 from cvzone import putTextRect
-
+from torch import cuda
+from queue import Queue
 class Entity:
     def __init__(self, cls, id_, t, conf):
         self.id = id_
@@ -26,9 +27,9 @@ class Analyzer:
         self.registered_entities = []
         self.tracker = Sort(max_age=60, min_hits=40, iou_threshold=0.1)
 
-        self.batch_size = 10
         self.batch_frames = []
-
+        self.batch_size = 32
+        self.frame_queue = Queue(maxsize=1000)  # Queue to store frames
         self.stop_event = Event()  # To safely stop the thread
 
     def detect_entities(self, boxes, current_frame_index, current_frame):
@@ -77,32 +78,51 @@ class Analyzer:
         # Save the frame as an image
         Image.fromarray(frame_rgb).save(file_name)
 
-    def worker(self, gui):
-        start_time = time()
-        gui.progress_bar["value"] = 0
-
-        while not self.stop_event.is_set():  # Continue until stop event is set
+    def read_frames(self):
+        """Producer: Reads frames and puts them into the queue"""
+        while not self.stop_event.is_set():
             success, frame = self.video.read()
             if not success:
                 break
+            self.frame_queue.put(frame)
+        self.frame_queue.put(None)  # Signal that video reading is done
 
-            self.batch_frames.append(frame)
+    def process_frames(self, gui):
+        """Consumer: Processes frames from the queue in batches"""
+        batch_frames = []
+        start_time = time()
 
+        while True:
+            frame = self.frame_queue.get()
+            if frame is None:
+                break  # Stop when producer signals that reading is done
+
+            batch_frames.append(frame)
+
+            # Get current frame index
             current_frame = int(self.video.get(CAP_PROP_POS_FRAMES))
 
+            if len(batch_frames) >= self.batch_size:
+                results = self.model(batch_frames, verbose=False)
+                for result in results:
+                    boxes = result.boxes
+                    self.detect_entities(boxes, current_frame, frame)
+
+                batch_frames.clear()
 
             # Update progress bar
             gui.progress_bar['value'] = (current_frame / self.total_frames) * 100
             gui.progress_label.configure(text=f"{floor((current_frame / self.total_frames) * 100)} %")
             gui.update()
+        
+        # Process any remaining frames after the main loop
+        if len(self.batch_frames) > 0:
+            results = self.model(self.batch_frames, verbose=False)  # Run YOLO inference on the remaining frames
+            for result in results:
+                boxes = result.boxes
+                self.detect_entities(boxes, current_frame, frame)
 
-            if len(self.batch_frames) >= self.batch_size:
-                results = self.model(self.batch_frames, verbose=False)  # Run YOLO inference on the batch
-                for result in results:
-                    boxes = result.boxes
-                    self.detect_entities(boxes, current_frame, frame)
-
-                self.batch_frames.clear()
+            self.batch_frames.clear()
 
         gui.progress_bar["value"] = 100
         gui.progress_label.configure(text="100 %")
@@ -111,19 +131,19 @@ class Analyzer:
         self.display_analysis_result(gui)
 
     def start(self, gui):
-        
         self.processing_time = 0
 
         gui.progress_bar["value"] = 0
         gui.progress_label.configure(text="0 %")
 
         self.selected_classes = gui.get_selected_categories()
-        
         model_path = gui.models_dropdown.get()
         model_path = actual_models_names[models.index(model_path)]
-        
+
+        device = 'cuda' if cuda.is_available() else 'cpu'
+
         if model_path:
-            self.model = YOLO(f"../models/{model_path}")
+            self.model = YOLO(f"../models/{model_path}").to(device)
         else:
             gui.show_alert_message("error", "Missing Model", "Please select a model")
             return False
@@ -142,15 +162,21 @@ class Analyzer:
             return False
         else:
             self.stop_event.clear()
-            # Start a worker thread for processing
-            self.thread = Thread(target=self.worker, args=(gui,))
-            self.thread.start()
+
+            # Start the producer thread (to read frames)
+            self.read_thread = Thread(target=self.read_frames)
+            self.read_thread.start()
+
+            # Start the consumer thread (to process frames)
+            self.process_thread = Thread(target=self.process_frames, args=(gui,))
+            self.process_thread.start()
 
     def stop(self):
-        # Stop the worker thread safely
         self.stop_event.set()
-        if self.thread.is_alive():
-            self.thread.join()
+        if self.read_thread.is_alive():
+            self.read_thread.join()
+        if self.process_thread.is_alive():
+            self.process_thread.join()
 
 
     def display_analysis_result(self, gui):
