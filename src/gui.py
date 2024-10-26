@@ -79,10 +79,11 @@ class APPGUI(ctk.CTk):
         self.progress_label = ctk.CTkLabel(self.right_frame, text = "0 %", font = ("courier",20))
         self.progress_label.pack()
 
-        self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20), height=100)
-        self.result_entry.pack(padx = 60, pady = 10, fill = ctk.X)
-    def put_text(self, widget, text):
-        widget.insert(ctk.END, text)
+        self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20))
+        self.result_entry.pack(padx = 60, pady = 10, fill = ctk.BOTH)
+
+    def put_text(self, widget, text, color = "black"):
+        widget.insert(ctk.END, text, color)
 
     def clear_text(self, widget):
         widget.delete("1.0", ctk.END)

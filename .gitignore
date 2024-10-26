@@ -1,6 +1,4 @@
 __pycache__/
-log.txt
+history/
 models/
 videos/
-critical_scenes/
-visualizer.py

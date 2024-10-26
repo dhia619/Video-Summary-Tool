@@ -12,8 +12,7 @@ from collections import defaultdict
 from cvzone import putTextRect
 from torch import cuda
 from queue import Queue
-from matplotlib import pyplot as plt
-
+from visualizer import *
 class Entity:
     def __init__(self, cls, id_, t, conf):
         self.id = id_
@@ -31,6 +30,12 @@ class Analyzer:
         self.batch_size = 32
         self.frame_queue = Queue(maxsize=1000)  # Queue to store frames
         self.stop_event = Event()  # To safely stop the thread
+
+        self.visualizer = Visualizer()
+
+        if not path.exists("history"):
+            makedirs("history")
+        chdir("history")
 
     def detect_entities(self, boxes, current_frame_index, current_frame):
         detections = np.empty((0, 5))
@@ -67,13 +72,13 @@ class Analyzer:
         
     def save_critical_scene(self, frame, t):
         # Ensure the directory for saving frames exists
-        if not path.exists("critical_scenes"):
-            makedirs("critical_scenes")
+        if not path.exists(f"{self.target_dir_name}/critical_scenes"):
+            makedirs(f"{self.target_dir_name}/critical_scenes")
 
         # Convert the frame to RGB
         frame_rgb = cvtColor(frame, COLOR_BGR2RGB)
 
-        file_name = f"critical_scenes/{t}.jpg"
+        file_name = f"{self.target_dir_name}/critical_scenes/{t}.jpg"
         
         # Save the frame as an image
         Image.fromarray(frame_rgb).save(file_name)
@@ -131,7 +136,8 @@ class Analyzer:
         self.display_analysis_result(gui)
 
     def start(self, gui):
-        
+
+        gui.start_button.configure(state="disabled")
 
         try:
             gui.clear_text(gui.result_entry)
@@ -163,14 +169,18 @@ class Analyzer:
             gui.show_alert_message("error", "Missing Model", "Please select a model")
             return False
 
-        video_path = gui.video_file
-        if not video_path:
+        self.video_path = gui.video_file
+        if not self.video_path:
             gui.show_alert_message("error", "Missing Video", "Please upload a video")
             return False 
 
-        self.video = VideoCapture(video_path)
+        self.video = VideoCapture(self.video_path)
         self.total_frames = self.video.get(CAP_PROP_FRAME_COUNT)
         self.frame_rate = self.video.get(CAP_PROP_FPS)
+
+        self.target_dir_name = self.video_path.split("/")[-1]
+        if not path.exists(self.target_dir_name):
+            makedirs(self.target_dir_name)
 
         if len(self.selected_classes) <= 0:
             gui.show_alert_message("error", "Class is missing", "You should choose one or multiple classes")
@@ -193,14 +203,10 @@ class Analyzer:
         if hasattr(self, 'process_thread') and self.process_thread.is_alive():
             self.process_thread.join()
 
-
     def display_analysis_result(self, gui):
         # Create a dictionary to group entities by time and class
         grouped_entities = defaultdict(lambda: defaultdict(int))
-        if not path.exists(gui.video_file):
-            makedirs(gui.video_file)
-        chdir(gui.video_file)
-        with open("log.txt", "w") as f:
+        with open(f"{self.target_dir_name}/log.txt", "w") as f:
             # Group entities by their class and appearance time
             for entity in self.entities:
                 # Convert appearance time to a formatted string
@@ -225,21 +231,22 @@ class Analyzer:
                 if count > 0:
                     f.write(f"{class_}: {count}\n")
 
+        # Save the image of the plot showing the content of the log
+        self.visualizer.generate_graph(f"{self.target_dir_name}/log.txt",self.target_dir_name)
+
         # Show analysis completion message in the GUI
-        gui.result_entry.configure(text_color="red")
-
-        gui.put_text(gui.result_entry, "> Analysis complete, check the log file")
-
+        gui.put_text(gui.result_entry, "> Analysis complete :D\n", "red")
+        gui.result_entry.tag_config("red", foreground="red")
+        gui.put_text(gui.result_entry, "> you will find the log and critical scenes under :\n","blue")
+        gui.result_entry.tag_config("blue", foreground="blue")
+        gui.put_text(gui.result_entry, "> history/", "green");gui.put_text(gui.result_entry, f"{self.target_dir_name}/", "brown")
+        gui.result_entry.tag_config("green", foreground="green");gui.result_entry.tag_config("brown",foreground="brown")
         gui.show_alert_message('info', "Success", "Analysis Completed Successfully.")
 
-        self.plot_detection_timeline()
-
+        gui.start_button.configure(state="enabled")
 
     def convert_time(self, t):
         hours = int(t // 3600)
         minutes = int((t % 3600) // 60)
         seconds = int(t % 60)
         return f"{hours:02}:{minutes:02}:{seconds:02}"
-    
-    def plot_detection_timeline(self):
-        pass
