@@ -3,3 +3,4 @@ log.txt
 models/
 videos/
 critical_scenes/
+visualizer.py

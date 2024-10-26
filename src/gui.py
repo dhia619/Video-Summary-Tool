@@ -81,9 +81,11 @@ class APPGUI(ctk.CTk):
 
         self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20), height=100)
         self.result_entry.pack(padx = 60, pady = 10, fill = ctk.X)
-
     def put_text(self, widget, text):
         widget.insert(ctk.END, text)
+
+    def clear_text(self, widget):
+        widget.delete("1.0", ctk.END)
 
     def show_alert_message(self, alert_type, title, msg):
         if alert_type == "error":

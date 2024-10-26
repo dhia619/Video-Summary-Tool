@@ -7,11 +7,13 @@ from math import floor
 from threading import Thread, Event
 from PIL import Image
 from settings import models,actual_models_names
-from os import path, makedirs
+from os import path, makedirs, chdir
 from collections import defaultdict
 from cvzone import putTextRect
 from torch import cuda
 from queue import Queue
+from matplotlib import pyplot as plt
+
 class Entity:
     def __init__(self, cls, id_, t, conf):
         self.id = id_
@@ -23,8 +25,6 @@ class Analyzer:
     def __init__(self, classes):
         self.all_classes = classes
         self.selected_classes = []
-        self.entities = []
-        self.registered_entities = []
         self.tracker = Sort(max_age=60, min_hits=40, iou_threshold=0.1)
 
         self.batch_frames = []
@@ -131,6 +131,21 @@ class Analyzer:
         self.display_analysis_result(gui)
 
     def start(self, gui):
+        
+
+        try:
+            gui.clear_text(gui.result_entry)
+        except:pass
+
+        self.stop()  # Stop any existing threads or processes
+        self.frame_queue.queue.clear()  # Clear any remaining frames in the queue
+
+        self.entities = []
+        self.registered_entities = []
+        self.critical_scenes = []
+        self.batch_frames.clear() 
+        self.tracker = Sort(max_age=60, min_hits=40, iou_threshold=0.1)
+
         self.processing_time = 0
 
         gui.progress_bar["value"] = 0
@@ -173,17 +188,18 @@ class Analyzer:
 
     def stop(self):
         self.stop_event.set()
-        if self.read_thread.is_alive():
+        if hasattr(self, 'read_thread') and self.read_thread.is_alive():
             self.read_thread.join()
-        if self.process_thread.is_alive():
+        if hasattr(self, 'process_thread') and self.process_thread.is_alive():
             self.process_thread.join()
 
 
     def display_analysis_result(self, gui):
         # Create a dictionary to group entities by time and class
         grouped_entities = defaultdict(lambda: defaultdict(int))
-
-        # Open the log file for writing
+        if not path.exists(gui.video_file):
+            makedirs(gui.video_file)
+        chdir(gui.video_file)
         with open("log.txt", "w") as f:
             # Group entities by their class and appearance time
             for entity in self.entities:
@@ -191,13 +207,14 @@ class Analyzer:
                 time_str = self.convert_time(entity.first_appeared_time)
                 grouped_entities[time_str][entity.class_] += 1
 
+            # Write the processing time
+            f.write(f"Processing time: {self.convert_time(self.processing_time)}\n")
+            
             # Write the grouped information to the log
             for time_str, classes in grouped_entities.items():
                 for class_, count in classes.items():
                     f.write(f"> {count} {class_}(s) showed up at {time_str}\n")
 
-            # Also write the processing time
-            f.write(f"\nProcessing time: {self.convert_time(self.processing_time)}\n")
 
             # Write a summary of the total count of each class
             classes_count = {class_name: 0 for class_name in self.all_classes}
@@ -210,9 +227,12 @@ class Analyzer:
 
         # Show analysis completion message in the GUI
         gui.result_entry.configure(text_color="red")
+
         gui.put_text(gui.result_entry, "> Analysis complete, check the log file")
 
         gui.show_alert_message('info', "Success", "Analysis Completed Successfully.")
+
+        self.plot_detection_timeline()
 
 
     def convert_time(self, t):
@@ -220,3 +240,6 @@ class Analyzer:
         minutes = int((t % 3600) // 60)
         seconds = int(t % 60)
         return f"{hours:02}:{minutes:02}:{seconds:02}"
+    
+    def plot_detection_timeline(self):
+        pass
