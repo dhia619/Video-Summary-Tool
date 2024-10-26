@@ -30,7 +30,7 @@ A highly efficient, Python-based video summary tool that leverages YOLO for obje
 1. Clone this repository:
     ```bash
     git clone https://github.com/elBo3Bo3/Video-Summary-Tool.git
-    cd analyze_video_tool/src
+    cd Video-Summary-Tool
     ```
 
 2. Install dependencies:
