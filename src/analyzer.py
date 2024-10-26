@@ -31,8 +31,6 @@ class Analyzer:
         self.frame_queue = Queue(maxsize=1000)  # Queue to store frames
         self.stop_event = Event()  # To safely stop the thread
 
-        self.visualizer = Visualizer()
-
         if not path.exists("history"):
             makedirs("history")
         chdir("history")
@@ -232,7 +230,7 @@ class Analyzer:
                     f.write(f"{class_}: {count}\n")
 
         # Save the image of the plot showing the content of the log
-        self.visualizer.generate_graph(f"{self.target_dir_name}/log.txt",self.target_dir_name)
+        generate_graph(f"{self.target_dir_name}/log.txt",self.target_dir_name)
 
         # Show analysis completion message in the GUI
         gui.put_text(gui.result_entry, "> Analysis complete :D\n", "red")
