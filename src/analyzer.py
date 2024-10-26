@@ -176,7 +176,7 @@ class Analyzer:
         self.total_frames = self.video.get(CAP_PROP_FRAME_COUNT)
         self.frame_rate = self.video.get(CAP_PROP_FPS)
 
-        self.target_dir_name = self.video_path.split("/")[-1]
+        self.target_dir_name = self.video_path.split("/")[-1][:-4]
         if not path.exists(self.target_dir_name):
             makedirs(self.target_dir_name)
 

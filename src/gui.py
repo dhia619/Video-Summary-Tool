@@ -8,7 +8,7 @@ class APPGUI(ctk.CTk):
 
         # Window settings
         ctk.set_appearance_mode("light")
-        self.title("Analyze Video Tool")
+        self.title("Video Summary Tool")
         self.geometry("850x500")
         self.minsize(800,400)
         self.configure(fg_color="white")
@@ -23,16 +23,16 @@ class APPGUI(ctk.CTk):
         self.left_frame = ctk.CTkFrame(self, fg_color="white")
         self.left_frame.grid(row=0, column=0, sticky="nsw")
 
-        self.setting_label = ctk.CTkLabel(self.left_frame, text="Settings", font=("courier", 22, "bold"), fg_color="white", text_color="orange")
+        self.setting_label = ctk.CTkLabel(self.left_frame, text="Settings", font=("Segoe UI", 22, "bold"), fg_color="white", text_color="orange")
         self.setting_label.pack(pady=10)
 
-        self.models_label = ctk.CTkLabel(self.left_frame, text="Model", font=("courier", 18, "bold"))
+        self.models_label = ctk.CTkLabel(self.left_frame, text="Model", font=("Segoe UI", 18, "bold"))
         self.models_label.pack(padx=15, anchor="w")
 
-        self.models_dropdown = ctk.CTkComboBox(self.left_frame, values=models, font=("courier",18))
+        self.models_dropdown = ctk.CTkComboBox(self.left_frame, values=models, font=("Segoe UI",18))
         self.models_dropdown.pack(padx=15, pady=5, anchor="w", fill=ctk.X)
 
-        self.categories_label = ctk.CTkLabel(self.left_frame, text="Categories", font=("courier", 18, "bold"))
+        self.categories_label = ctk.CTkLabel(self.left_frame, text="Categories", font=("Segoe UI", 18, "bold"))
         self.categories_label.pack(padx=15, pady=5, anchor="w")
 
         # Frame to hold the scrollable checkboxes
@@ -44,30 +44,27 @@ class APPGUI(ctk.CTk):
 
         # Add "All" checkbox
         self.all_var = ctk.BooleanVar()  # Variable for the "All" checkbox
-        self.all_checkbox = ctk.CTkCheckBox(self.scrollable_frame, text="All", variable=self.all_var, command=self.toggle_all_checkboxes, font=("courier", 20))
+        self.all_checkbox = ctk.CTkCheckBox(self.scrollable_frame, text="All", variable=self.all_var, command=self.toggle_all_checkboxes, font=("Segoe UI", 20))
         self.all_checkbox.pack(anchor="w", padx=5, pady=5)
 
         # Add checkboxes for each class in the `classes` list
         for cls in classes:
             var = ctk.BooleanVar()  # Each checkbox needs its own variable
-            checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=cls, variable=var, command=self.update_all_checkbox, font=("courier", 20))
+            checkbox = ctk.CTkCheckBox(self.scrollable_frame, text=cls, variable=var, command=self.update_all_checkbox, font=("Segoe UI", 20))
             checkbox.pack(anchor="w", padx=5, pady=5)
             self.checkbox_vars[cls] = var  # Store the variable associated with each class
 
         # Right frame for processing
         self.right_frame = ctk.CTkFrame(self, fg_color="white")
         self.right_frame.grid(row=0, column=1, sticky="nsew")
-
-        self.processing_label = ctk.CTkLabel(self.right_frame, text = "Analyser", font=("courier", 22, "bold"), fg_color="white", text_color="orange")
-        self.processing_label.pack(pady = 20)
         
-        self.upload_button = ctk.CTkButton(self.right_frame, text="Upload Video", command=self.upload_video, font=("Courier", 20))
+        self.upload_button = ctk.CTkButton(self.right_frame, text="Upload Video", command=self.upload_video, font=("Segoe UI", 20))
         self.upload_button.pack(pady=20)
         
-        self.selected_file_label = ctk.CTkLabel(self.right_frame, text="No file selected", font=("Courier", 16))
+        self.selected_file_label = ctk.CTkLabel(self.right_frame, text="No file selected", font=("Segoe UI", 16))
         self.selected_file_label.pack(pady=10)
 
-        self.start_button = ctk.CTkButton(self.right_frame, text = "Start", font = ("courier",20))
+        self.start_button = ctk.CTkButton(self.right_frame, text = "Start", font = ("Segoe UI",20))
         self.start_button.pack(pady = 10)
 
         self.preview_label = ctk.CTkLabel(self.right_frame, text="")
@@ -76,10 +73,10 @@ class APPGUI(ctk.CTk):
         self.progress_bar = ttk.Progressbar(self.right_frame, orient="horizontal", mode="determinate", length=350)
         self.progress_bar.pack(padx = 60, pady = 30, fill = ctk.X)
         
-        self.progress_label = ctk.CTkLabel(self.right_frame, text = "0 %", font = ("courier",20))
+        self.progress_label = ctk.CTkLabel(self.right_frame, text = "0 %", font = ("Segoe UI",20))
         self.progress_label.pack()
 
-        self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("courier",20))
+        self.result_entry = ctk.CTkTextbox(self.right_frame, font = ("Segoe UI",20))
         self.result_entry.pack(padx = 60, pady = 10, fill = ctk.BOTH)
 
     def put_text(self, widget, text, color = "black"):
