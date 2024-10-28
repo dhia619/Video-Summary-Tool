@@ -219,8 +219,8 @@ class Analyzer:
                 for class_, count in classes.items():
                     f.write(f"> {count} {class_}(s) showed up at {time_str}\n")
 
-
             # Write a summary of the total count of each class
+            f.write("Total counts :\n")
             classes_count = {class_name: 0 for class_name in self.all_classes}
             for entity in self.entities:
                 classes_count[entity.class_] += 1
